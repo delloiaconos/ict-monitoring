@@ -18,8 +18,7 @@ services:
       - name: "Alertmanager"
         icon: "fas fa-bell"
         url: "http://alertmanager.${BASE_DOMAIN}"
-        
-
+      
       - name: "Pulse"
         icon: "fas fa-heartbeat"
         url: "http://pulse.${BASE_DOMAIN}"
