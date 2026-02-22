@@ -15,6 +15,7 @@ SHELL 	:= /usr/bin/env bash
 SRC_DIR := $(CURDIR)
 PROJECT := monitoring-server
 DST_DIR := /opt/$(PROJECT)
+ENV_FILE := .env
 
 # Space-separated list of directories to scan
 RENDER_PATHS := homer/assets nginx/conf.d
@@ -60,7 +61,7 @@ RSYNC_CATCHALL := --exclude="*"
 help:
 	@echo "Targets:"
 	@echo "  make prepare       Create $(DST_DIR) and set ownership"
-	@echo "  make render        Render templates to $(DST_DIR) (optionally VARS='${VAR1} ${VAR2}')"
+	@echo "  make render        Render templates to $(DST_DIR) (optionally VARS='${VAR1} ${VAR2}' or ENV_FILE=.env.example)"
 	@echo "  make deploy        Sync files to $(DST_DIR), ensure .env, and $(COMPOSE) up -d"
 	@echo "  make sync          Only rsync runtime files to $(DST_DIR)"
 	@echo "  make sync-prune    Sync and prune runtime files to $(DST_DIR)"
@@ -74,6 +75,7 @@ help:
 	@echo "Variables:"
 	@echo "  SUDO=sudo          Use sudo for prepare (if needed)"
 	@echo "  SERVICE=prometheus For logs/restart"
+	@echo "  ENV_FILE=.env.example For render (default is .env)"
 	@echo ""
 	@echo "Info:"
 	@echo "  SRC_DIR=$(SRC_DIR)"
@@ -83,6 +85,7 @@ help:
 
 render:
 	@set -euo pipefail; \
+	set -a; source "$(ENV_FILE)"; set +a; \
 	for src in $(TEMPLATES); do \
 		rel="$$src"; \
 		out="$(DST_DIR)/$${rel%$(TEMPLATE_SUFFIX)}"; \
