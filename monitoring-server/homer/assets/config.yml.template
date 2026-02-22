@@ -7,6 +7,9 @@ services:
   - name: "Observability"
     icon: "fas fa-chart-line"
     items:
+      - name: "Portainer"
+        url: "http://portainer.${BASE_DOMAIN}"
+
       - name: "Grafana"
         icon: "fas fa-grafana"
         url: "http://grafana.${BASE_DOMAIN}"
