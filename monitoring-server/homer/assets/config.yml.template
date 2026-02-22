@@ -1,0 +1,26 @@
+title: "Monitoring"
+subtitle: "${BASE_DOMAIN}"
+header: true
+footer: false
+
+services:
+  - name: "Observability"
+    icon: "fas fa-chart-line"
+    items:
+      - name: "Grafana"
+        icon: "fas fa-grafana"
+        url: "http://grafana.${BASE_DOMAIN}"
+
+      - name: "Prometheus"
+        icon: "fas fa-prometheus"
+        url: "http://prometheus.${BASE_DOMAIN}"
+
+      - name: "Alertmanager"
+        icon: "fas fa-bell"
+        url: "http://alertmanager.${BASE_DOMAIN}"
+        
+
+      - name: "Pulse"
+        icon: "fas fa-heartbeat"
+        url: "http://pulse.${BASE_DOMAIN}"
+        
