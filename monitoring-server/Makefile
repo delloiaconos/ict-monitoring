@@ -24,9 +24,9 @@ TEMPLATE_SUFFIX := .template
 
 # What to deploy/exlude into /opt/monitoring-server
 INCLUDE_FILES := docker-compose.yml
-INCLUDE_PATHS := telegraf grafana mosquitto influxdb
+INCLUDE_PATHS := homer nginx prometheus alertmanager grafana
 
-EXCLUDE_FILES := .DS_Store .env .gitignore .editorconfig .prettier* .vscode *.$(TEMPLATE_SUFFIX)
+EXCLUDE_FILES := .DS_Store .env .gitignore .editorconfig .prettier* .vscode
 EXCLUDE_PATHS := .svn .git .venv data logs temp
 
 # Optional: if DST_DIR requires root permissions for writing, set SUDO=sudo
@@ -36,6 +36,8 @@ SUDO ?=
 # Example: make render VARS='${BASE_DOMAIN} ${GRAFANA_DOMAIN}'
 VARS ?=
 
+# Collect templates under the listed paths (paths are relative to repo root)
+TEMPLATES := $(shell find $(RENDER_PATHS) -type f -name '*$(TEMPLATE_SUFFIX)')
 
 # ---------- compose rsync filters ----------
 RSYNC_INCLUDES := \
@@ -46,12 +48,10 @@ RSYNC_INCLUDES := \
 RSYNC_EXCLUDES := \
   $(foreach f,$(EXCLUDE_FILES),--exclude="/$(f)") \
   $(foreach d,$(EXCLUDE_PATHS),--exclude="/$(d)/") \
-  $(foreach d,$(EXCLUDE_PATHS),--exclude="/$(d)/***")
+  $(foreach d,$(EXCLUDE_PATHS),--exclude="/$(d)/***") \
+  $(foreach t,$(TEMPLATES),--exclude="/$(t)")
 
-RSYNC_CATCHALL := --exclude="*"
-
-# Collect templates under the listed paths (paths are relative to repo root)
-TEMPLATES := $(shell find $(RENDER_PATHS) -type f -name '*$(TEMPLATE_SUFFIX)')
+RSYNC_CATCHALL := --exclude="*" 
 
 # ---------- Makefile targets ----------
 .DEFAULT_GOAL := sync
