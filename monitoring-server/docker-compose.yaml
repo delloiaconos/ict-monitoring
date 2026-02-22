@@ -125,12 +125,25 @@ services:
     restart: unless-stopped
     networks: [monitoring]
 
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    expose:
+      - "9000"   # Web UI (HTTP)
+      - "9443"   # Web UI (HTTPS) - optional
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    networks: [monitoring]
+
 volumes:
   prometheus-data:
   grafana-data:
   alertmanager-data:
   pulse-data:
-
+  portainer-data:
+  
 networks:
   monitoring:
     driver: bridge
