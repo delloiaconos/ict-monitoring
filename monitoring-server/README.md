@@ -399,7 +399,7 @@ The server stack runs Node Exporter with `network_mode: host`, so it is not atta
 
 ### Portainer console or startup problems
 
-The Portainer proxy currently lacks WebSocket upgrade forwarding, so interactive console features may fail even when the web UI loads. Nginx also does not list Portainer in `depends_on`, despite resolving `portainer:9000` at startup. If nginx reports an unresolved Portainer upstream, verify that Portainer has started and restart nginx. These are current configuration limitations.
+Nginx lists Portainer in `depends_on` and forwards WebSocket upgrade headers over HTTP/1.1 for interactive consoles. The proxy read timeout is 24 hours to accommodate idle console sessions. Compose orders container startup but does not wait for Portainer to become ready. If the UI or console fails, check Portainer and nginx logs, confirm that Portainer is listening internally on port `9000`, and ensure the current nginx template has been rendered and reloaded.
 
 ### PVE Exporter fails to start
 

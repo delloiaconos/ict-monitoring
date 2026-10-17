@@ -121,7 +121,8 @@ services:
       - prometheus
       - alertmanager
       - pulse
-      - homer 
+      - homer
+      - portainer
     restart: unless-stopped
     networks: [monitoring]
 
