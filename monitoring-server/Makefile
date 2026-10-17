@@ -25,7 +25,7 @@ RENDER_PATHS := homer/assets nginx/conf.d
 TEMPLATE_SUFFIX := .template
 
 # What to deploy/exlude into /opt/monitoring-server
-INCLUDE_FILES := docker-compose.yaml
+INCLUDE_FILES := docker-compose.yml
 INCLUDE_PATHS := homer nginx prometheus alertmanager grafana
 
 EXCLUDE_FILES := .DS_Store .env .gitignore .editorconfig .prettier* .vscode

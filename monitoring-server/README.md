@@ -177,7 +177,7 @@ After changing the template, run `make render` and refresh the dashboard. When a
 
 ### Grafana
 
-Default credentials in `docker-compose.yaml` are:
+Default credentials in `docker-compose.yml` are:
 
 ```text
 Username: admin
