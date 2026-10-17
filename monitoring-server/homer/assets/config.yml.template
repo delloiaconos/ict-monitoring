@@ -1,5 +1,7 @@
 title: "Monitoring"
 subtitle: "${BASE_DOMAIN}"
+logo: false
+icon: "fas fa-chart-line"
 header: true
 footer: false
 
@@ -8,14 +10,15 @@ services:
     icon: "fas fa-chart-line"
     items:
       - name: "Portainer"
+        icon: "fas fa-server"
         url: "https://portainer.${BASE_DOMAIN}"
 
       - name: "Grafana"
-        icon: "fas fa-grafana"
+        icon: "fas fa-chart-area"
         url: "https://grafana.${BASE_DOMAIN}"
 
       - name: "Prometheus"
-        icon: "fas fa-prometheus"
+        icon: "fas fa-fire"
         url: "https://prometheus.${BASE_DOMAIN}"
 
       - name: "Alertmanager"
@@ -25,4 +28,3 @@ services:
       - name: "Pulse"
         icon: "fas fa-heartbeat"
         url: "https://pulse.${BASE_DOMAIN}"
-        

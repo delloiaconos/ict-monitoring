@@ -101,9 +101,9 @@ services:
     expose:
       - "8080"
     environment:
-      - INIT_ASSETS=1   # default is 1; seeds example config if none exists
+      - INIT_ASSETS=0   # configuration is rendered by make; retain bundled assets
     volumes:
-      - ./homer/assets:/www/assets
+      - ./homer/assets/config.yml:/www/assets/config.yml:ro
     networks: [monitoring]
 
   nginx:

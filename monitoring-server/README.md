@@ -165,6 +165,16 @@ To restrict rendering to specific variables:
 make VARS='$${BASE_DOMAIN}' render
 ```
 
+### Homer
+
+Edit [homer/assets/config.yml.template](homer/assets/config.yml.template) to change the dashboard. `make render` writes `homer/assets/config.yml` into the runtime directory, replacing `${BASE_DOMAIN}` in the HTTPS service links.
+
+Compose mounts only that generated file, read-only, into `/www/assets/config.yml`. Homer’s bundled assets (including its favicon and application icons) remain available. `INIT_ASSETS=0` disables installation of the example configuration. Run `make render` before starting Homer; the template itself is not a configuration file that Homer can load.
+
+The header and service cards use bundled Font Awesome icons, so they do not need downloaded service logos. If adding custom images later, mount them into a separate path under `/www/assets` and reference that path in the template; avoid replacing the entire bundled assets directory.
+
+After changing the template, run `make render` and refresh the dashboard. When applying a Compose mount change, run `make sync` followed by `make COMPOSE="docker compose" up` to recreate the affected container.
+
 ### Grafana
 
 Default credentials in `docker-compose.yaml` are:
