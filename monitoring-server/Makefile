@@ -26,7 +26,7 @@ TEMPLATE_SUFFIX := .template
 
 # What to deploy/exlude into /opt/monitoring-server
 INCLUDE_FILES := docker-compose.yml
-INCLUDE_PATHS := homer nginx prometheus alertmanager grafana
+INCLUDE_PATHS := homer nginx prometheus alertmanager grafana pve
 
 EXCLUDE_FILES := .DS_Store .env .gitignore .editorconfig .prettier* .vscode
 EXCLUDE_PATHS := .svn .git .venv data logs temp
@@ -58,17 +58,18 @@ RSYNC_CATCHALL := --exclude="*"
 
 # ---------- Makefile targets ----------
 .DEFAULT_GOAL := sync
-.PHONY: prepare deploy sync sync-prune ensure-env up down restart logs status render certs help
+.PHONY: prepare prepare-dir check-prepared deploy sync sync-prune ensure-env up down restart logs status render certs help
 
 help:
 	@echo "Targets:"
 	@echo "  make certs         Generate self-signed TLS files in $(DST_DIR)/nginx/certs"
-	@echo "  make prepare       Create $(DST_DIR) and set ownership"
+	@echo "  make prepare       Prepare runtime files, environment, and check required TLS files"
 	@echo "  make render        Render templates to $(DST_DIR) (optionally VARS='${VAR1} ${VAR2}' or ENV_FILE=.env.example)"
-	@echo "  make deploy        Sync files to $(DST_DIR), ensure .env, and $(COMPOSE) up -d"
+	@echo "  make deploy        Prepare runtime files, then start the stack"
 	@echo "  make sync          Only rsync runtime files to $(DST_DIR)"
 	@echo "  make sync-prune    Sync and prune runtime files to $(DST_DIR)"
-	@echo "  make ensure-env    Ensure $(DST_DIR)/.env contains COMPOSE_PROJECT_NAME=$(PROJECT)"
+	@echo "  make ensure-env    Install ENV_FILE into $(DST_DIR)/.env with the project name"
+	@echo "  make check-prepared Check required runtime files without starting services"
 	@echo "  make up            $(COMPOSE) up -d (project=$(PROJECT))"
 	@echo "  make down          $(COMPOSE) down (project=$(PROJECT))"
 	@echo "  make restart       $(COMPOSE) restart (optionally SERVICE=prometheus)"
@@ -79,7 +80,7 @@ help:
 	@echo "  SUDO=sudo          Use sudo for deployment/certificates (if needed)"
 	@echo "  CERT_DAYS=365      Self-signed certificate validity in days"
 	@echo "  SERVICE=prometheus For logs/restart"
-	@echo "  ENV_FILE=.env.example For render/certs (default is .env)"
+	@echo "  ENV_FILE=.env.example Source environment for preparation/render/certs (default is .env)"
 	@echo ""
 	@echo "Info:"
 	@echo "  SRC_DIR=$(SRC_DIR)"
@@ -96,6 +97,7 @@ certs:
 render:
 	@set -euo pipefail; \
 	set -a; source "$(ENV_FILE)"; set +a; \
+	: "$${BASE_DOMAIN:?Set BASE_DOMAIN in $(ENV_FILE)}"; \
 	for src in $(TEMPLATES); do \
 		rel="$$src"; \
 		out="$(DST_DIR)/$${rel%$(TEMPLATE_SUFFIX)}"; \
@@ -114,10 +116,33 @@ list:
 clean:
 	@rm -rf "$(DST_DIR)"
 
-deploy: prepare sync render ensure-env up status
+# Recursive targets keep preparation ordered, including with make -j.
+deploy: prepare
+	$(MAKE) up
+	$(MAKE) status
 	@echo "Done."
 
 prepare:
+	@set -a; source "$(ENV_FILE)"; set +a; : "$${BASE_DOMAIN:?Set BASE_DOMAIN in $(ENV_FILE)}"
+	$(MAKE) prepare-dir
+	$(MAKE) sync
+	$(MAKE) render
+	$(MAKE) ensure-env
+	$(MAKE) check-prepared
+	@echo "Prepared $(DST_DIR). Run make up, or run docker compose up -d from that directory."
+
+check-prepared:
+	@for file in docker-compose.yml .env homer/assets/config.yml \
+		$(patsubst %.template,%,$(filter nginx/%,$(TEMPLATES))) \
+		nginx/certs/fullchain.pem nginx/certs/privkey.pem; do \
+		if ! $(SUDO) test -s "$(DST_DIR)/$$file" || ! $(SUDO) test -f "$(DST_DIR)/$$file"; then \
+			echo "Missing or empty runtime file: $(DST_DIR)/$$file" >&2; \
+			echo "Configure ENV_FILE, supply certificates (or run make certs), then run make prepare before starting Compose." >&2; \
+			exit 1; \
+		fi; \
+	done
+
+prepare-dir:
 	@echo "Creating $(DST_DIR) and setting ownership to current user and docker group..."
 	$(SUDO) mkdir -p "$(DST_DIR)"
 	$(SUDO) chown -R $(shell id -un):docker "$(DST_DIR)"
@@ -138,12 +163,11 @@ sync:
 	@echo "Done."
 
 ensure-env:
-	@echo "Ensure project name is '$(PROJECT)'..."
-	@if [ ! -f "$(DST_DIR)/.env" ]; then \
-		echo "COMPOSE_PROJECT_NAME=$(PROJECT)" | $(SUDO) tee "$(DST_DIR)/.env" >/dev/null; \
-	fi
+	@set -a; source "$(ENV_FILE)"; set +a; : "$${BASE_DOMAIN:?Set BASE_DOMAIN in $(ENV_FILE)}"
+	$(SUDO) install -m 600 "$(ENV_FILE)" "$(DST_DIR)/.env"
+	@printf '\nCOMPOSE_PROJECT_NAME=%s\n' "$(PROJECT)" | $(SUDO) tee -a "$(DST_DIR)/.env" >/dev/null
 
-up:
+up: check-prepared
 	@echo "Start/restart stack from $(DST_DIR)..."
 	cd "$(DST_DIR)" && $(SUDO) $(COMPOSE) -p "$(PROJECT)" up -d
 

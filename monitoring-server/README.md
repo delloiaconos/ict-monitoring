@@ -110,35 +110,42 @@ Nginx accepts HTTPS only on port `443` and terminates TLS. Port `80` is not publ
    docker exec monitoring-nginx nginx -s reload
    ```
 
-5. Deploy the stack.
+5. Configure the Proxmox exporter or remove its service from Compose as described in [Proxmox monitoring](#proxmox-monitoring). If enabled, create `pve/pve.yml`; preparation copies this directory into the runtime deployment.
 
-   If your system has the legacy `docker-compose` command:
-
-   ```bash
-   make deploy
-   ```
-
-   If your system uses the modern Docker Compose plugin:
+6. **Prepare the deployment before running Compose.** From the working copy:
 
    ```bash
-   make COMPOSE="docker compose" deploy
+   make prepare
+   # If the deployment directory requires elevated permissions:
+   make SUDO=sudo prepare
    ```
 
-   If `/opt/monitoring-server` requires root permissions:
+   This creates `/opt/monitoring-server`, copies runtime files, renders Homer and nginx configuration, installs `.env` with mode `0600`, and checks that all rendered files and both TLS files exist and are nonempty. It requires `BASE_DOMAIN` in the source `.env` and does not generate certificates or start containers. The file checks do not validate certificate contents or application configuration.
+
+7. Start the prepared deployment:
 
    ```bash
-   make SUDO=sudo deploy
+   cd /opt/monitoring-server
+   docker compose up -d
    ```
 
-The Makefile deploys runtime files to `/opt/monitoring-server`, renders templates using `.env`, ensures a Compose project name, starts the stack, and prints container status.
+   Alternatively, from the working copy:
 
-Before deployment, configure the Proxmox exporter or disable it as described in [Proxmox monitoring](#proxmox-monitoring).
+   ```bash
+   make COMPOSE="docker compose" up
+   ```
+
+   Use `docker-compose` on legacy installations, or omit the `COMPOSE` override for Make targets.
+
+**A fresh checkout cannot be started directly with `docker compose up -d`.** Compose does not render templates or create certificates. Always run `make prepare` first, and run Compose from the prepared runtime directory. Use the same `DST_DIR` override for `certs`, `prepare`, and `up` when choosing another deployment location; keep it separate from the working copy.
+
+For subsequent deployments, `make COMPOSE="docker compose" deploy` runs preparation before starting the stack and showing status. Add `SUDO=sudo` when required. Preparation replaces the runtime `.env` from `ENV_FILE` (default `.env` in the working copy), so edit the source environment rather than the deployed copy. Application configuration changes may still require a service reload or restart.
 
 ## Configuration
 
 ### Environment variables
 
-`.env` is used by the Makefile to render template files.
+`.env` supplies template rendering and is installed into the runtime directory for Compose interpolation by `make prepare`. `BASE_DOMAIN` must be nonempty.
 
 | Variable | Description | Example |
 | --- | --- | --- |
@@ -240,7 +247,9 @@ Run the following from `monitoring-server/`.
 | Command | Description |
 | --- | --- |
 | `make help` | Show Makefile targets |
-| `make deploy` | Prepare, sync, render, ensure `.env`, start services, and show status |
+| `make prepare` | Required preparation: copy runtime files, render templates, install `.env`, and check required files |
+| `make check-prepared` | Check required runtime files without starting services |
+| `make deploy` | Run preparation, start services, and show status |
 | `make sync` | Copy runtime files to `/opt/monitoring-server` |
 | `make sync-prune` | Sync runtime files and delete removed files from destination |
 | `make certs` | Generate self-signed TLS certificate/key in the deployment directory (requires OpenSSL) |

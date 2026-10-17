@@ -1,3 +1,5 @@
+# Requires preparation: run make prepare from the working copy first.
+# Run Compose from DST_DIR (default /opt/monitoring-server), not this checkout.
 services:
   prometheus:
     image: prom/prometheus:latest
