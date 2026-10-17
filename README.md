@@ -154,7 +154,17 @@ Nginx accepts HTTPS only on port `443` and terminates TLS. Port `80` is not publ
 
    Place the PEM certificate chain in `nginx/certs/fullchain.pem` and its matching private key in `nginx/certs/privkey.pem`. The certificate must cover `BASE_DOMAIN` and every service subdomain listed above (for example, `monitoring.example.com` and `*.monitoring.example.com`). These files are ignored by Git and copied into the runtime directory during deployment; keep the private key readable only by the deployment user and root. Nginx mounts them read-only and requires both files to start.
 
-   After renewing the certificate, run `make sync` and reload Nginx:
+   Alternatively, generate a self-signed certificate **on the deployment server**, from the `monitoring-server/` working copy:
+
+   ```bash
+   make certs
+   # If the deployment directory requires elevated permissions:
+   make SUDO=sudo certs
+   ```
+
+   This requires OpenSSL and reads `BASE_DOMAIN` from `.env`. It uses `nginx/openssl.cnf` to generate a 3072-bit RSA key and a certificate covering the base domain and its wildcard subdomains, valid for 365 days. Override the validity with `CERT_DAYS=90`, the environment file with `ENV_FILE=...`, or the deployment directory with `DST_DIR=...`. Files are written directly to `/opt/monitoring-server/nginx/certs/`; the private key has mode `0600`. Both `make sync` and `make sync-prune` preserve destination-only PEM files. Generation refuses to overwrite either existing file; archive the existing pair before regenerating. Browsers and other clients must explicitly trust this self-signed certificate to avoid certificate warnings. `make deploy` does not generate certificates automatically.
+
+   After renewing a supplied certificate, run `make sync`. For certificates generated with `make certs`, the files are already in the runtime directory. Reload Nginx after either renewal:
 
    ```bash
    docker exec monitoring-nginx nginx -t
@@ -294,6 +304,7 @@ Run the following from `monitoring-server/`.
 | `make deploy` | Prepare, sync, render, ensure `.env`, start services, and show status |
 | `make sync` | Copy runtime files to `/opt/monitoring-server` |
 | `make sync-prune` | Sync runtime files and delete removed files from destination |
+| `make certs` | Generate self-signed TLS certificate/key in the deployment directory (requires OpenSSL) |
 | `make render` | Render `.template` files using environment variables |
 | `make up` | Start the Compose stack |
 | `make down` | Stop the Compose stack |

@@ -16,6 +16,7 @@ SRC_DIR := $(CURDIR)
 PROJECT := monitoring-server
 DST_DIR := /opt/$(PROJECT)
 ENV_FILE := .env
+CERT_DAYS ?= 365
 
 # Space-separated list of directories to scan
 RENDER_PATHS := homer/assets nginx/conf.d
@@ -47,6 +48,7 @@ RSYNC_INCLUDES := \
   $(foreach d,$(INCLUDE_PATHS),--include="/$(d)/***")
 
 RSYNC_EXCLUDES := \
+  --filter="P /nginx/certs/*.pem" \
   $(foreach f,$(EXCLUDE_FILES),--exclude="/$(f)") \
   $(foreach d,$(EXCLUDE_PATHS),--exclude="/$(d)/") \
   $(foreach d,$(EXCLUDE_PATHS),--exclude="/$(d)/***") \
@@ -56,10 +58,11 @@ RSYNC_CATCHALL := --exclude="*"
 
 # ---------- Makefile targets ----------
 .DEFAULT_GOAL := sync
-.PHONY: prepare deploy sync sync-prune ensure-env up down restart logs status render help
+.PHONY: prepare deploy sync sync-prune ensure-env up down restart logs status render certs help
 
 help:
 	@echo "Targets:"
+	@echo "  make certs         Generate self-signed TLS files in $(DST_DIR)/nginx/certs"
 	@echo "  make prepare       Create $(DST_DIR) and set ownership"
 	@echo "  make render        Render templates to $(DST_DIR) (optionally VARS='${VAR1} ${VAR2}' or ENV_FILE=.env.example)"
 	@echo "  make deploy        Sync files to $(DST_DIR), ensure .env, and $(COMPOSE) up -d"
@@ -73,15 +76,22 @@ help:
 	@echo "  make logs          $(COMPOSE) logs -f (optionally SERVICE=prometheus)"
 	@echo ""
 	@echo "Variables:"
-	@echo "  SUDO=sudo          Use sudo for prepare (if needed)"
+	@echo "  SUDO=sudo          Use sudo for deployment/certificates (if needed)"
+	@echo "  CERT_DAYS=365      Self-signed certificate validity in days"
 	@echo "  SERVICE=prometheus For logs/restart"
-	@echo "  ENV_FILE=.env.example For render (default is .env)"
+	@echo "  ENV_FILE=.env.example For render/certs (default is .env)"
 	@echo ""
 	@echo "Info:"
 	@echo "  SRC_DIR=$(SRC_DIR)"
 	@echo "  DST_DIR=$(DST_DIR)"
 	@echo "  PROJECT=$(PROJECT)"
 
+
+certs:
+	@set -a; source "$(ENV_FILE)"; set +a; \
+	$(SUDO) env BASE_DOMAIN="$${BASE_DOMAIN:?Set BASE_DOMAIN in $(ENV_FILE)}" \
+		bash "$(SRC_DIR)/scripts/generate-certs.sh" \
+		"$(DST_DIR)/nginx/certs" "$(CERT_DAYS)" "$(SRC_DIR)/nginx/openssl.cnf"
 
 render:
 	@set -euo pipefail; \

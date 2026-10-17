@@ -1,0 +1,18 @@
+# BASE_DOMAIN is supplied by make certs from ENV_FILE.
+[req]
+prompt = no
+distinguished_name = subject
+x509_extensions = server_certificate
+
+[subject]
+CN = $ENV::BASE_DOMAIN
+
+[server_certificate]
+basicConstraints = critical, CA:FALSE
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @hostnames
+
+[hostnames]
+DNS.1 = $ENV::BASE_DOMAIN
+DNS.2 = *.$ENV::BASE_DOMAIN
