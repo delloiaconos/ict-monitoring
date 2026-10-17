@@ -6,17 +6,17 @@ ICT Monitoring brings metrics, dashboards, alerts, and infrastructure management
 
 ## What it provides
 
-- **Metrics and alerts:** Prometheus collects host and container metrics; Alertmanager routes notifications.
-- **Dashboards:** Grafana visualizes metrics, while Homer provides a landing page for the monitoring tools.
+- **Metrics and alerts:** Prometheus is configured to scrape local services and exporters. Host scraping needs an address correction; Alertmanager notifications require receiver configuration.
+- **Dashboards:** Grafana provides the visualization interface; datasources and dashboards must be configured. Homer provides a landing page for the monitoring tools.
 - **Infrastructure management:** Portainer manages Docker environments, and Pulse provides an additional monitoring interface.
-- **Proxmox monitoring:** A configurable Proxmox exporter extends metrics collection to your virtualization environment.
+- **Proxmox monitoring:** A Proxmox exporter is included; its credentials and Prometheus scrape job must be configured, or its service removed.
 - **HTTPS access:** Nginx terminates TLS for the server's web interfaces. Internal proxy traffic uses HTTP, with support for supplied or locally generated self-signed certificates.
 
 ## How it fits together
 
-The **monitoring server** runs the central services and collects metrics from both itself and remote hosts. Each **monitored host** runs cAdvisor, Node Exporter, and Portainer Agent. Prometheus scrapes the exporters, while Portainer connects to the agents for Docker management.
+The **monitoring server** runs the central services with local scrape targets. Remote hosts must be added to its Prometheus configuration and registered in Portainer. Each **monitored host** runs cAdvisor, Node Exporter, and Portainer Agent. After registration, Prometheus scrapes the exporters and Portainer connects to the agents for Docker management.
 
-Browser access to the central web interfaces goes through Nginx on port `443`. Remote agent connections use separate ports over your private network or VPN.
+Browser access to the central web interfaces goes through Nginx on port `443`. Node Exporter also listens directly on the monitoring host at port `9100`. Remote agents publish separate ports; private networking, VPNs, and firewall restrictions must be provided by the operator.
 
 ## Deployment guides
 
@@ -25,7 +25,7 @@ Browser access to the central web interfaces goes through Nginx on port `443`. R
 | Monitoring server | The central monitoring machine | [Setup, certificates, configuration, and operations](monitoring-server/README.md) |
 | Monitored host | Each additional Docker host | [Agent setup, server registration, and operations](monitoring-host/README.md) |
 
-Start with the monitoring server guide, configure your domain and certificates, then deploy agents on the hosts you want to monitor. Both stacks require Docker and Docker Compose; each guide lists its additional prerequisites.
+Start with the monitoring server guide, configure your domain and certificates, and run `make prepare` before starting Compose from the runtime directory. Then deploy and register agents on the hosts you want to monitor. Both stacks require Docker and Docker Compose; each guide lists its additional prerequisites.
 
 ## Repository layout
 
