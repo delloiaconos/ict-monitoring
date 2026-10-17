@@ -24,7 +24,7 @@ RENDER_PATHS := homer/assets nginx/conf.d
 TEMPLATE_SUFFIX := .template
 
 # What to deploy/exlude into /opt/monitoring-server
-INCLUDE_FILES := docker-compose.yml
+INCLUDE_FILES := docker-compose.yaml
 INCLUDE_PATHS := homer nginx prometheus alertmanager grafana
 
 EXCLUDE_FILES := .DS_Store .env .gitignore .editorconfig .prettier* .vscode
@@ -33,9 +33,9 @@ EXCLUDE_PATHS := .svn .git .venv data logs temp
 # Optional: if DST_DIR requires root permissions for writing, set SUDO=sudo
 SUDO ?=
 
-# Optional: restrict envsubst to these variables (recommended)
-# Example: make render VARS='${BASE_DOMAIN} ${GRAFANA_DOMAIN}'
-VARS ?=
+# Only substitute deployment variables; preserve nginx runtime variables.
+# Example: make render VARS='$${BASE_DOMAIN} $${GRAFANA_DOMAIN}'
+VARS ?= $${BASE_DOMAIN}
 
 # Collect templates under the listed paths (paths are relative to repo root)
 TEMPLATES := $(shell find $(RENDER_PATHS) -type f -name '*$(TEMPLATE_SUFFIX)')

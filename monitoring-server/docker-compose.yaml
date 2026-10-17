@@ -88,7 +88,7 @@ services:
     environment:
       - TZ=Europe/Rome
       # Optional but recommended when behind a reverse proxy:
-      - PULSE_PUBLIC_URL=http://pulse.${BASE_DOMAIN}
+      - PULSE_PUBLIC_URL=https://pulse.${BASE_DOMAIN}
       # Optional: bootstrap admin (auto-hashed on startup)
       # - PULSE_AUTH_USER=admin
       # - PULSE_AUTH_PASS=change-me
@@ -110,12 +110,10 @@ services:
     image: nginx:alpine
     container_name: monitoring-nginx
     ports:
-      - "80:80"
-      # later, if you add TLS: "443:443"
+      - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      # later, if you add TLS certs:
-      # - ./nginx/certs:/etc/nginx/certs:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
     depends_on:
       - grafana
       - prometheus

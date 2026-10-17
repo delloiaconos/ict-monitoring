@@ -8,21 +8,21 @@ services:
     icon: "fas fa-chart-line"
     items:
       - name: "Portainer"
-        url: "http://portainer.${BASE_DOMAIN}"
+        url: "https://portainer.${BASE_DOMAIN}"
 
       - name: "Grafana"
         icon: "fas fa-grafana"
-        url: "http://grafana.${BASE_DOMAIN}"
+        url: "https://grafana.${BASE_DOMAIN}"
 
       - name: "Prometheus"
         icon: "fas fa-prometheus"
-        url: "http://prometheus.${BASE_DOMAIN}"
+        url: "https://prometheus.${BASE_DOMAIN}"
 
       - name: "Alertmanager"
         icon: "fas fa-bell"
-        url: "http://alertmanager.${BASE_DOMAIN}"
+        url: "https://alertmanager.${BASE_DOMAIN}"
       
       - name: "Pulse"
         icon: "fas fa-heartbeat"
-        url: "http://pulse.${BASE_DOMAIN}"
+        url: "https://pulse.${BASE_DOMAIN}"
         

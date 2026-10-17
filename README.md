@@ -46,16 +46,16 @@ The `monitoring-server` directory runs the main observability platform. The `mon
 
 | Service | Purpose | Internal port | Public hostname pattern |
 | --- | --- | ---: | --- |
-| Homer | Landing page for the monitoring tools | 8080 | `http://homer.<BASE_DOMAIN>` and `http://<BASE_DOMAIN>` |
-| Grafana | Dashboards and visualization | 3000 | `http://grafana.<BASE_DOMAIN>` |
-| Prometheus | Metrics collection and alert rules | 9090 | `http://prometheus.<BASE_DOMAIN>` |
-| Alertmanager | Alert routing and notifications | 9093 | `http://alertmanager.<BASE_DOMAIN>` |
-| Portainer | Docker management UI | 9000 | `http://portainer.<BASE_DOMAIN>` |
-| Pulse | Lightweight status/monitoring UI | 7655 | `http://pulse.<BASE_DOMAIN>` |
+| Homer | Landing page for the monitoring tools | 8080 | `https://homer.<BASE_DOMAIN>` and `https://<BASE_DOMAIN>` |
+| Grafana | Dashboards and visualization | 3000 | `https://grafana.<BASE_DOMAIN>` |
+| Prometheus | Metrics collection and alert rules | 9090 | `https://prometheus.<BASE_DOMAIN>` |
+| Alertmanager | Alert routing and notifications | 9093 | `https://alertmanager.<BASE_DOMAIN>` |
+| Portainer | Docker management UI | 9000 | `https://portainer.<BASE_DOMAIN>` |
+| Pulse | Lightweight status/monitoring UI | 7655 | `https://pulse.<BASE_DOMAIN>` |
 | cAdvisor | Container metrics for the monitoring server | 8080 | Not exposed directly |
 | Node Exporter | Host metrics for the monitoring server | 9100 | Not exposed directly |
 | PVE Exporter | Proxmox metrics exporter | 9221 | Not exposed directly |
-| Nginx | Reverse proxy for public service hostnames | 80 | Public entry point |
+| Nginx | Reverse proxy for public service hostnames | 443 | Public HTTPS entry point |
 
 ### Monitored host
 
@@ -127,7 +127,7 @@ Then set:
 BASE_DOMAIN=monitoring.example.com
 ```
 
-The current Nginx configuration exposes HTTP on port `80`. TLS is not configured in this repository yet.
+Nginx accepts HTTPS only on port `443` and terminates TLS. Port `80` is not published and there is no HTTP redirect. Traffic from Nginx to the services stays on HTTP within the Docker network.
 
 ## Quick start: monitoring server
 
@@ -150,18 +150,15 @@ The current Nginx configuration exposes HTTP on port `80`. TLS is not configured
    BASE_DOMAIN=monitoring.example.com
    ```
 
-4. Check the Compose file name.
+4. Install your TLS certificate and private key.
 
-   The repository currently contains `monitoring-server/docker-compose.yaml`, while the Makefile sync filter includes `docker-compose.yml`. Before using `make deploy`, either rename the Compose file:
+   Place the PEM certificate chain in `nginx/certs/fullchain.pem` and its matching private key in `nginx/certs/privkey.pem`. The certificate must cover `BASE_DOMAIN` and every service subdomain listed above (for example, `monitoring.example.com` and `*.monitoring.example.com`). These files are ignored by Git and copied into the runtime directory during deployment; keep the private key readable only by the deployment user and root. Nginx mounts them read-only and requires both files to start.
+
+   After renewing the certificate, run `make sync` and reload Nginx:
 
    ```bash
-   mv docker-compose.yaml docker-compose.yml
-   ```
-
-   Or update this line in `monitoring-server/Makefile`:
-
-   ```makefile
-   INCLUDE_FILES := docker-compose.yaml
+   docker exec monitoring-nginx nginx -t
+   docker exec monitoring-nginx nginx -s reload
    ```
 
 5. Deploy the stack.
@@ -242,7 +239,7 @@ Files ending in `.template` under these paths are rendered to `/opt/monitoring-s
 - `homer/assets`
 - `nginx/conf.d`
 
-The Makefile uses `envsubst` to replace variables such as `${BASE_DOMAIN}`.
+The Makefile uses `envsubst` to replace only `${BASE_DOMAIN}` by default, preserving Nginx variables such as `$host`, `$scheme`, and `$http_upgrade`.
 
 To render using a different environment file:
 
@@ -253,7 +250,7 @@ make ENV_FILE=.env.example render
 To restrict rendering to specific variables:
 
 ```bash
-make VARS='${BASE_DOMAIN}' render
+make VARS='$${BASE_DOMAIN}' render
 ```
 
 ### Grafana
@@ -354,7 +351,7 @@ If you do not monitor Proxmox, remove or comment out the `pve-exporter` service 
 ## Security notes
 
 - Replace the default Grafana `admin/admin` credentials.
-- Add TLS before exposing services on the public internet.
+- Use a trusted TLS certificate covering all public hostnames and renew it before expiry.
 - Restrict access to Prometheus, Alertmanager, Portainer, and exporters with firewall rules, VPN, authentication, or a private network.
 - Avoid exposing monitored host exporter ports directly to the internet.
 - Pin container image versions for production deployments instead of using `latest`.
@@ -363,9 +360,9 @@ If you do not monitor Proxmox, remove or comment out the `pve-exporter` service 
 
 ## Troubleshooting
 
-### `make deploy` does not copy the Compose file
+### Nginx cannot load the TLS certificate
 
-Check the Compose file name mismatch described in the quick start section. Either rename `docker-compose.yaml` to `docker-compose.yml` or update `INCLUDE_FILES` in the Makefile.
+Verify that `nginx/certs/fullchain.pem` and `nginx/certs/privkey.pem` exist in `/opt/monitoring-server`, contain PEM data, and are readable by the container. The key must match the certificate. Run `docker exec monitoring-nginx nginx -t` to check the configuration when the container is running.
 
 ### `envsubst: command not found`
 
